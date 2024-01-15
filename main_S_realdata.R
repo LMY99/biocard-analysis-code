@@ -15,9 +15,12 @@ K <- 11 # Number of biomarkers
 X <- as.matrix(cbind(intercept=1,df[,c("apoe","SEX","education")])) 
 Y <- df[,1:K] # Biomarkers array
 t <- df$ageori # Age in original scale
-dfi <- 20 # DoF of Spline
+dfi <- 24 # DoF of Spline
 qknot <- (1:(dfi-3))/(dfi-2) # Quantiles to determine knots
 VIF <- 0.1 # Variance inflation factor for BETAKDE
+group <- c(1,1,1,
+           2,2,2,2,2,
+           3,3,3)
 
 library(ggplot2)
 
@@ -127,10 +130,10 @@ for(i in 1:(R-1)){
   sigmays[i+1] <- update_sigmay(covar.list,Y,as.matrix(REs[df$ID,,i],ncol=1),
   as.matrix(coefs[,,i],ncol=1),
   3,0.5)
-  u <- update_coef(covar.list,nX,Y,as.matrix(REs[df$ID,,i],ncol=1),
+  u <- update_coef_grouped(covar.list,nX,Y,as.matrix(REs[df$ID,,i],ncol=1),
                    sigmays[i+1],sigmaws[i],df$ID,
                    coef.prior$mean,
-                   prec,M_coef,verbose,samples=1)
+                   prec,M_coef,verbose,group,samples=1)
   coefs[,,i+1] <- aperm(u$res,c(2,3,1))
   REs[,,i+1] <- update_W(covar.list,Y,as.matrix(coefs[,,i+1],ncol=K),long_ss,
                          df$ID,sigmays[i+1],sigmaws[i])
@@ -160,4 +163,4 @@ for(i in 1:(R-1)){
   sigmaws[i+1] <- update_sigmaw(REs[,,i+1],3,0.5)
   pb$tick()
 }
-save.image('biocard_result.RData')
+save.image('biocard_result_group.RData')

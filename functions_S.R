@@ -589,3 +589,110 @@ logpmvnorm <- function(lb,ub,mu,Sigma,Nmax=1e3){
   #cat(sum(is.na(ad))," ",sum(is.na(f[,m])), "\n")
   return(res)
 }
+update_coef_grouped <- function(covars.list,nX,Y,RE,sy,sw,id,prior.mean,prior.precision,Ms,verbose=FALSE,group=NULL,
+                                samples=1,burnin=5){
+  require(matrixStats)
+  res <- array(0,c(samples,ncol(covars.list[[1]]),ncol(Y)))
+  unique_id <- unique(id)
+  mu_list <- list()
+  var_list <- list()
+  for(k in 1:ncol(Y)){
+    non_mis <- !is.na(Y[,k])
+    CC <- covars.list[[k]][non_mis,]
+    comp_id <- id[non_mis]
+    block_size <- integer(length(unique_id))
+    for(j in 1:length(block_size))
+      block_size[j] <- sum(comp_id==j)
+    lik_prec <- exchangable_cov(sy,sw,block_size)$Prec
+    precision <- prior.precision + t(CC)%*%lik_prec%*%CC
+    variance <- solve(precision)
+    
+    mu <- as.vector(precision%*%prior.mean)
+    mu <- mu + t(CC)%*%lik_prec%*%Y[,k][non_mis]
+    
+    mu <- as.vector(variance%*%mu)
+    mu_list[[k]] <- mu
+    var_list[[k]] <- variance
+  }
+  #logp <- puMVN(mu,variance,nX,Ms,log=T,verbose=verbose)
+  #logp <- logp - max(logp)
+  #logp0 <- logp - matrixStats::logSumExp(logp)
+  #if(any(is.na(logp0)))
+  #  {print(logp);print(logp0)}
+  #print(logp)
+  #print(logp0)
+  # inflex <- sample(1:length(logp),1,
+  #                  prob=exp(logp)
+  #                  )
+  # res[,k] <- ruMVN(1,mu,variance,nX,inflex,Ms)
+  if(nX>0) free_indice <- 1:nX
+  else free_indice <- NULL
+  res_list <- hdtg_S_grouped(samples,mu_list,var_list,free_indice,group,burnin)
+  for(k in 1:ncol(Y))
+    res[,,k] <- res_list[[k]]
+  #ep <- exp(logp)
+  #inflex_prob[,k] <- logp#ep/sum(ep)
+  #res[,,k] <- t(replicate(samples,rtMVN(mu,variance,(nX+1):length(mu),SShape=TRUE)))
+  
+  return(list(res=res))
+}
+hdtg_S_grouped <- function(n,mu_list,sigma_list,free=NULL,group=NULL,burnin=5){
+  p <- length(mu_list[[1]])
+  K <- length(mu_list)
+  if(is.null(group)) group <- 1:K
+  else group <- match(group,unique(group))
+  if(is.null(free)) res_index <- 1:p
+  else res_index <- (1:p)[-free]
+  p_res <- length(res_index)
+  FF <- matrix(0,nrow=p_res+1,ncol=p)
+  for(i in 1:p_res){
+    FF[,res_index][i,i] <- 1
+    if(i>1) FF[,res_index][i,i-1] <- -1
+  }
+  FF[,res_index][p_res+1,p_res] <- 1
+  logprob <- list()
+  for(k0 in 1:K) logprob[[k0]] <- rep(0,p_res)
+  for(k0 in 1:K){
+    for(i in 1:p_res){
+      Fmat <- FF
+      if(i<p_res) Fmat[(i+1):p_res,] <- -Fmat[(i+1):p_res,]
+      g <- rep(0,p_res+1)
+      new.S <- Fmat%*%sigma_list[[k0]]%*%t(Fmat); new.S[p_res+1,p_res+1] <- new.S[p_res+1,p_res+1]*(1+1e-3)
+      new.mu <- Fmat%*%mu_list[[k0]]
+      logprob[[k0]][i] <- logpmvnorm(rep(0,p_res+1),rep(+Inf,p_res+1),new.mu,new.S)
+    }
+    logprob[[k0]] <- logprob[[k0]] - max(logprob[[k0]])
+  }
+  joint_logprob <- list()
+  for(g0 in 1:length(unique(group)))
+    joint_logprob[[g0]] <- rep(0,p_res)
+  for(k0 in 1:K){
+    joint_logprob[[group[k0]]] <- 
+      joint_logprob[[group[k0]]] + logprob[[k0]]
+  }
+  inflex.points <- list()
+  for(g0 in 1:length(unique(group)))
+    inflex.points[[g0]] <- sample(1:p_res,n,replace=TRUE,prob=exp(joint_logprob[[g0]]))
+  result <- list()
+  for(k0 in 1:K)
+    result[[k0]] <- matrix(0,nrow=n,ncol=p)
+  for(k0 in 1:K){
+    for(i in 1:p_res){
+      pnums <- sum(inflex.points[[group[k0]]]==i)
+      if(pnums==0) next
+      Fmat <- FF
+      if(i<p_res) Fmat[(i+1):p_res,] <- -Fmat[(i+1):p_res,]
+      g <- rep(0,p_res+1)
+      init <- rep(0,p)
+      init[res_index][i] <- 0.1
+      init[res_index][-i] <- 0.1*runif(p_res-1)
+      if(i>1) init[res_index][1:(i-1)] <- sort(init[res_index][1:(i-1)],decreasing=FALSE)
+      if(i<p_res) init[res_index][(i+1):p_res] <- sort(init[res_index][(i+1):p_res],decreasing=TRUE)
+      result[[k0]][inflex.points[[group[k0]]]==i,] <- hdtg::harmonicHMC(n=pnums,burnin=burnin,
+                                                                        mean=mu_list[[k0]],choleskyFactor=chol(sigma_list[[k0]]),
+                                                                        F=Fmat,g=g,init=init,precFlg=FALSE)
+    }
+  }
+  if(n==1) return(lapply(result,as.vector))
+  else return(result)
+}
