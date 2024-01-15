@@ -1,0 +1,7 @@
+
+*.rda
+
+*.RData
+.Rproj.user
+
+realdata.Rproj
