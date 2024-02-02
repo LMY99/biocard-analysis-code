@@ -696,3 +696,65 @@ hdtg_S_grouped <- function(n,mu_list,sigma_list,free=NULL,group=NULL,burnin=5){
   if(n==1) return(lapply(result,as.vector))
   else return(result)
 }
+update_pens_grouped <- function(
+    gamma, # Matrix containing K gamma coefficients
+    mu, # Prior Mean of Gamma
+    lambda, # Current value of penalty parameters, 1 for smooth, 2 for flat 
+    lpd, # Log posterior density function of lambda
+    ls, # Log of standard deviation of proposal distribution
+    weight, # Window Function; NULL means default quadratic window,
+    Ms,
+    group,
+    verbose
+){
+  require(mvtnorm)
+  p <- dim(gamma)[1]
+  K <- dim(gamma)[2]
+  mat <- foreach(i=1:K, .packages = c("matrixStats","mvtnorm"), .combine=rbind) %dorng% {
+    source("temp.R")
+    Q <- penalty_Matrix(p, lambda[1], lambda[2], weight)
+    n <- puMVN(mu,Q$V,0,Ms,verbose=verbose)
+    l <- dmvnorm(t(gamma)[i,],mu,Q$V,log=TRUE)
+    c(l,n)
+  }
+  norm.const <- mat[,-1]; lpdf <- mat[,1]
+  group.id <- sort(unique(group))
+  nC <- 0
+  for(i in 1:length(group.id)){
+    temp <- colSums(norm.const[group==group.id[i],])
+    nC <- nC + logSumExp(temp)
+  }
+  ll <- sum(lpdf)-nC + lpd(lambda)
+  # Propose new state
+  # Since lambda is positive, we use log-normal jumps
+  new <- exp(log(lambda) + rnorm(2, sd=exp(ls)))
+  mat <- foreach(i=1:K, .packages = c("matrixStats","mvtnorm"), .combine=rbind) %dorng% {
+    source("temp.R")
+    Q <- penalty_Matrix(p, new[1], new[2], weight)
+    n <- puMVN(mu,Q$V,0,Ms,verbose=verbose)
+    l <- dmvnorm(t(gamma)[i,],mu,Q$V,log=TRUE)
+    c(l,n)
+  }
+  norm.const <- mat[,-1]; lpdf <- mat[,1]
+  group.id <- sort(unique(group))
+  nC <- 0
+  for(i in 1:length(group.id)){
+    temp <- colSums(norm.const[group==group.id[i],])
+    nC <- nC + logSumExp(temp)
+  }
+  ll2 <- sum(lpdf)-nC + lpd(new)
+  
+  diff <- ll - sum(log(new)) - ll2 + sum(log(lambda))
+  # diff <- ll - ll2
+  temp <- rexp(1)
+  if(temp>diff){
+    acc_status <- 1
+    state <- new
+  }
+  else
+  {
+    acc_status <- 0
+    state <- lambda
+  }
+  return(list(acc_status=acc_status, new=state))
+}

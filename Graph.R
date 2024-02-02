@@ -1,9 +1,8 @@
-filename <- "biocard_result_group"
+filename <- "0207"
 load(sprintf("%s.RData",filename))
-filename <- "biocard_result_group"
+filename <- "0207"
 usePackage("splines2")
 usePackage("TruncatedNormal")
-library(tidyverse)
 
 library(ggplot2)
 pdf("visual.pdf",width=7)
@@ -74,7 +73,7 @@ yy <- array(0,c(length(tt),K))
 yy_std <- yy
 for(j in 1:K){
   tsp <- ibs(tt,knots=knot.list[[j]],Boundary.knots=boundary.knot,
-             degree=2, intercept=TRUE)
+                 degree=2, intercept=TRUE)
   tsp <- tsp[,3:(ncol(tsp)-2)]
   yy[,j] <- tsp %*% fit.coef[(nX+1):(nX+dfi-4),j]
   yy_std[,j] <- yy[,j]/max(yy[,j])

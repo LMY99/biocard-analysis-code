@@ -5,6 +5,11 @@ usePackage("TruncatedNormal")
 usePackage("mvtnorm")
 usePackage("matrixStats")
 source("exchangable_cov.R")
+usePackage("foreach")
+
+library(doParallel)
+library(doRNG)
+registerDoParallel(cores=11)
 options(warn=0)
 
 # Loading Data ---------------------------------------------------
@@ -15,7 +20,7 @@ K <- 11 # Number of biomarkers
 X <- as.matrix(cbind(intercept=1,df[,c("apoe","SEX","education")])) 
 Y <- df[,1:K] # Biomarkers array
 t <- df$ageori # Age in original scale
-dfi <- 24 # DoF of Spline
+dfi <- 20 # DoF of Spline
 qknot <- (1:(dfi-3))/(dfi-2) # Quantiles to determine knots
 VIF <- 0.1 # Variance inflation factor for BETAKDE
 group <- c(1,1,1,
@@ -137,14 +142,15 @@ for(i in 1:(R-1)){
   coefs[,,i+1] <- aperm(u$res,c(2,3,1))
   REs[,,i+1] <- update_W(covar.list,Y,as.matrix(coefs[,,i+1],ncol=K),long_ss,
                          df$ID,sigmays[i+1],sigmaws[i])
-  new_pens <- update_pens(gamma=as.matrix(coefs[(nX+1):ncol(covar.list[[1]]),,i+1],ncol=1),
+  new_pens <- update_pens_grouped(gamma=as.matrix(coefs[(nX+1):ncol(covar.list[[1]]),,i+1],ncol=1),
                           mu=gamma.prior$mean,
                           lambda=pens[,i],
                           lpd=lpd,
                           ls=ls,
                           weight=w,
                           Ms=M_pen,
-                          verbose=verbose
+                          verbose=verbose,
+                          group=group
   )
   pens[,i+1] <- new_pens$new
   acc <- acc + new_pens$acc_status
@@ -163,4 +169,5 @@ for(i in 1:(R-1)){
   sigmaws[i+1] <- update_sigmaw(REs[,,i+1],3,0.5)
   pb$tick()
 }
-save.image('biocard_result_group.RData')
+stopImplicitCluster()
+save.image('biocard_result_group16nonzeros.RData')
