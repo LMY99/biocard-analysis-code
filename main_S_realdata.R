@@ -115,14 +115,14 @@ sigmaws[1] <- 1/rgamma(1,shape=3,rate=0.5)
 
 # Prior density for penalties
 lpd <- function(s) 
-  log(2)+dnorm(s[1], log=TRUE) +
-  log(2)+dnorm(s[2], log=TRUE)
+  log(2)+dnorm(s[1], sd=1/50, log=TRUE) +
+  log(2)+dnorm(s[2], sd=1/50, log=TRUE)
 ls <- -2 # Log of Jump Standard Deviation
 acc <- 0 # Accepted Proposals in one batch
 lss <- ls # Sequence of LS for reference
-w <- planck_taper(ncol(B), eps=0.5) # Window Function
-w <- rep(1,ncol(B))
-w <- NULL
+w <- planck_taper(ncol(B), eps=0.1) # Window Function
+#w <- rep(1,ncol(B))
+#w <- NULL
 
 M_coef <- lincon(nX+dfi-4,nX)
 M_pen <- lincon(dfi-4,0)
