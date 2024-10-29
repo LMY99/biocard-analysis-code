@@ -20,7 +20,7 @@ K <- 11 # Number of biomarkers
 X <- as.matrix(cbind(intercept=1,df[,c("apoe","SEX","education")])) 
 Y <- df[,1:K] # Biomarkers array
 t <- df$ageori # Age in original scale
-dfi <- 20 # DoF of Spline
+dfi <- 24 # DoF of Spline
 qknot <- (1:(dfi-3))/(dfi-2) # Quantiles to determine knots
 VIF <- 0.1 # Variance inflation factor for BETAKDE
 group <- c(1,1,1,
@@ -115,8 +115,8 @@ sigmaws[1] <- 1/rgamma(1,shape=3,rate=0.5)
 
 # Prior density for penalties
 lpd <- function(s) 
-  log(2)+dnorm(s[1], sd=1/50, log=TRUE) +
-  log(2)+dnorm(s[2], sd=1/50, log=TRUE)
+  log(2)+dnorm(s[1], sd=1/20, log=TRUE) +
+  log(2)+dnorm(s[2], sd=1/20, log=TRUE)
 ls <- -2 # Log of Jump Standard Deviation
 acc <- 0 # Accepted Proposals in one batch
 lss <- ls # Sequence of LS for reference
@@ -170,4 +170,4 @@ for(i in 1:(R-1)){
   pb$tick()
 }
 stopImplicitCluster()
-save.image('biocard_result_group16nonzeros.RData')
+save.image('biocard_result_group20nonzeros.RData')
