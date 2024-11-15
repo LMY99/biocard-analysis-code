@@ -4,6 +4,24 @@ library(splines2)
 library(foreach)
 rm(list=ls()); gc(verbose=FALSE)
 load("biocard_result_group20nonzeros.RData")
+# Age effect from age 50 to 90 years old
+age_59 <- c(50,90)
+basis_59 <- ibs(age_59, knots=knot.list[[1]], Boundary.knots = boundary.knot, 
+                degree=2, intercept=TRUE)
+basis_59 <- basis_59[,3:(ncol(basis_59)-2)]
+incre_59 <- 
+  foreach(i=1:K,.combine=rbind) %do% {
+    curves <- basis_59 %*% coefs[-(1:4),i,(R/2+1):R]
+    incre <- apply(curves, 2, function(x) x[2]-x[1])
+    incre_est <- c(avg=mean(incre), HDInterval::hdi(incre)) 
+    incre_est
+  } %>% as.data.frame() %>%
+  mutate_all(round, digits=2) %>%
+  mutate(biomarker=c("MMSE","LogMem","DSST","ENT-THICK","HIPPO","ENT-VOL",
+                     "MTL","SPARE-AD","t-tau","p-tau181","AB42/AB40 Ratio")) %>%
+  remove_rownames() %>%
+  column_to_rownames('biomarker')
+
 # Make Point-CI plot for covariate effect ----
 indice <- (R/2+1):R
 summary_fixed <- apply(coefs[2:4,,indice],c(1,2),
@@ -24,6 +42,10 @@ sf <- t(Reduce(cbind, list(
   summary_fixed[,,10],
   summary_fixed[,,11]
 )))
+# Education effect from 12 to 16 years
+(summary_fixed[,3,] * (max(df$education)-min(df$education)) / 2) %>% 
+  round(2)
+
 library(ggplot2)
 
 bionames <- c("MMSE","LogMem","DSST","ENT-THICK","HIPPO","ENT-VOL",
