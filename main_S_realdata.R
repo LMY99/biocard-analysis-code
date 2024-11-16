@@ -4,7 +4,6 @@ usePackage("splines2")
 usePackage("TruncatedNormal")
 usePackage("mvtnorm")
 usePackage("matrixStats")
-source("exchangable_cov.R")
 usePackage("foreach")
 
 library(doParallel)
