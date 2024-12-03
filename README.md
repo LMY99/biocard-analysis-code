@@ -25,10 +25,8 @@ This repository contains the three *rda* files needed for the analysis, but the 
 |education|(standardized) years of education||
 |Study.ID|Individual ID||
 |ageori|Age (in years)||
-|\hline{=tex}|
 |*DECAGE.rda*|||
 |decs|Symptom onset age||
-|\hline{=tex}|
 |*AD_Diagnose_Age.rda*|||
 |AD_Diagnose_Age|Dementia onset age||
 
