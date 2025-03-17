@@ -4,6 +4,7 @@ library(splines2)
 library(foreach)
 library(ggplot2)
 library(latex2exp)
+library(ggnewscale)
 rm(list = ls())
 gc(verbose = FALSE)
 load("biocard_result_group20nonzeros.RData")
@@ -191,18 +192,56 @@ spline_std <- mutate(spline_std, Biomarker = factor(Biomarker, levels = bionames
 p1 <-
   ggplot() +
   geom_ribbon(aes(x = age, ymin = lower, ymax = upper, group = Biomarker, fill = Biomarker),
-    alpha = 0.1,
-    data = subset(spline_std, type == "Curve")
+              alpha = 0.1,
+              data = subset(spline_std, type == "Curve"&Biomarker%in%bionames[1:3])
   ) +
   geom_line(aes(x = age, y = value, group = Biomarker, color = Biomarker), 
-            data = subset(spline_std, type == "Curve")) +
+            data = subset(spline_std, type == "Curve"&Biomarker%in%bionames[1:3])) +
   geom_point(aes(x = age, y = value, color = Biomarker), 
-             data = subset(spline_std, type == "Mark"), 
+             data = subset(spline_std, type == "Mark"&Biomarker%in%bionames[1:3]), 
              shape = "I", size = 4) +
-  scale_color_manual(values = colors0, labels = print_labels, 
-                     breaks = bionames) +
-  scale_fill_manual(values = colors0, labels = print_labels, 
-                    breaks = bionames) +
+  scale_color_manual(values = colors0[1:3], labels = print_labels[1:3], 
+                     breaks = bionames[1:3], name = 'Biomarker',
+                     guide = guide_legend(order=1)) +
+  scale_fill_manual(values = colors0[1:3], labels = print_labels[1:3], 
+                    breaks = bionames[1:3], name = 'Biomarker',
+                    guide = guide_legend(order=1)) +
+  
+  new_scale_fill() + new_scale_color() +
+  geom_ribbon(aes(x = age, ymin = lower, ymax = upper, group = Biomarker, fill = Biomarker),
+              alpha = 0.1,
+              data = subset(spline_std, type == "Curve"&Biomarker%in%bionames[4:8])
+  ) +
+  geom_line(aes(x = age, y = value, group = Biomarker, color = Biomarker), 
+            data = subset(spline_std, type == "Curve"&Biomarker%in%bionames[4:8])) +
+  geom_point(aes(x = age, y = value, color = Biomarker), 
+             data = subset(spline_std, type == "Mark"&Biomarker%in%bionames[4:8]), 
+             shape = "I", size = 4) +
+  scale_color_manual(values = colors0[4:8], labels = print_labels[4:8], 
+                     breaks = bionames[4:8], name = ' ',
+                     guide = guide_legend(order=2)) +
+  scale_fill_manual(values = colors0[4:8], labels = print_labels[4:8], 
+                    breaks = bionames[4:8], name = ' ',
+                    guide = guide_legend(order=2)) +
+  
+  new_scale_fill() + new_scale_color() +
+  geom_ribbon(aes(x = age, ymin = lower, ymax = upper, group = Biomarker, fill = Biomarker),
+              alpha = 0.1,
+              data = subset(spline_std, type == "Curve"&Biomarker%in%bionames[9:11])
+  ) +
+  geom_line(aes(x = age, y = value, group = Biomarker, color = Biomarker), 
+            data = subset(spline_std, type == "Curve"&Biomarker%in%bionames[9:11])) +
+  geom_point(aes(x = age, y = value, color = Biomarker), 
+             data = subset(spline_std, type == "Mark"&Biomarker%in%bionames[9:11]), 
+             shape = "I", size = 4) +
+  scale_color_manual(values = colors0[9:11], labels = print_labels[9:11], 
+                     breaks = bionames[9:11], name = '  ',
+                     guide = guide_legend(order=3)) +
+  scale_fill_manual(values = colors0[9:11], labels = print_labels[9:11], 
+                    breaks = bionames[9:11], name = '  ',
+                    guide = guide_legend(order=3)) +
+  
+  
   scale_x_continuous(limits = c(50, 100)) +
   scale_y_continuous(limits = c(0, 1)) +
   ylab("Abnormality") +
@@ -212,8 +251,8 @@ p1 <-
     axis.text.x = element_text(size = 20),
     axis.title.x = element_text(size = 20),
     axis.title.y = element_text(size = 20),
-    legend.text = element_text(size = 20),
-    title = element_text(size = 20)
+    legend.text = element_text(size = 16),
+    title = element_text(size = 16)
   )
 
 p2 <-
@@ -238,8 +277,8 @@ p2 <-
     axis.text.x = element_text(size = 20),
     axis.title.x = element_text(size = 20),
     axis.title.y = element_text(size = 20),
-    legend.text = element_text(size = 20),
-    title = element_text(size = 20),
+    legend.text = element_text(size = 16),
+    title = element_text(size = 16),
     legend.justification = c(0, 0.5)
   )
 pdf("SplineStd.pdf", width = 14)
