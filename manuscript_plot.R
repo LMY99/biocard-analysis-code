@@ -3,9 +3,12 @@ library(tidyverse)
 library(splines2)
 library(foreach)
 library(ggplot2)
+library(latex2exp)
 rm(list = ls())
 gc(verbose = FALSE)
 load("biocard_result_group20nonzeros.RData")
+load("AD_Diagnose_Age.rda")
+load("DECAGE.rda")
 
 bionames <- c(
   "MMSE", "LogMem", "DSST", "ENT-THICK", "HIPPO", "ENT-VOL",
@@ -92,7 +95,7 @@ for (i in 1:K) {
   fitted_values[is.na(Y[, i]), i] <- NA
 }
 fitted_values <- as.data.frame(fitted_values)
-Y$type <- "Data"
+Y$type <- "Observed"
 Y$id <- df$ID
 Y$age <- df$ageori
 fitted_values$type <- "Fitted"
@@ -103,6 +106,7 @@ gof_data <- rbind(Y, fitted_values)[, select_biom]
 pdf("Goodness_of_fit_Grid3.pdf")
 print(
   gof_data %>% gather("Biomarker", "Value", DSST, "ENT-VOL", "t-tau") %>%
+    mutate(Biomarker = ifelse(Biomarker == 't-tau', 'Total tau', Biomarker)) %>% 
     ggplot() +
     geom_line(aes(x = age, y = Value, group = interaction(id, type), color = type),
       alpha = 0.3
@@ -114,8 +118,9 @@ print(
       panel.grid.major = element_line(colour = "grey75"),
       panel.grid.minor = element_line(colour = "grey90")
     ) +
-    scale_color_manual(values = c(Data = "black", Fitted = "darkred")) +
-    scale_x_continuous(limits = c(50, 100))
+    scale_color_manual(values = c(Observed = "black", Fitted = "darkred"), name = NULL) +
+    scale_x_continuous(limits = c(50, 100)) +
+    scale_y_continuous(name = 'Standardized Abnormality Scores')
 )
 dev.off()
 # Make CI plot for Standardized Biomarker Trajectory
@@ -161,6 +166,11 @@ colors0 <- c(
   "royalblue", "blue", "purple", "black"
 )
 names(colors0) <- bionames
+print_labels <- unname(TeX(c(
+  "A$\\beta$ ratio", "p-tau181", "Total tau", "ENT-THICK", "ENT-VOL",
+  "MTL", "SPARE-AD", "HIPPO", "DSST", "MMSE", "LogMem"
+)))
+names(print_labels) <- bionames
 
 inflect_order <- spline_std %>%
   filter(type == "Mark") %>%
@@ -171,27 +181,41 @@ inflect_order <- spline_std %>%
 bionames <- bionames[inflect_order]
 colors0 <- colors0[inflect_order]
 spline_std <- mutate(spline_std, Biomarker = factor(Biomarker, levels = bionames))
-
+# spline_std <- mutate(
+#   spline_std, Biomarker = case_when(
+#     Biomarker == 'AB42/AB40 Ratio' ~ 'Abeta ratio',
+#     Biomarker == 't-tau' ~ 'Total tau',
+#     .default = Biomarker
+#   )
+# )
 p1 <-
   ggplot() +
-  geom_line(aes(x = age, y = value, group = Biomarker, color = Biomarker), data = subset(spline_std, type == "Curve")) +
   geom_ribbon(aes(x = age, ymin = lower, ymax = upper, group = Biomarker, fill = Biomarker),
     alpha = 0.1,
     data = subset(spline_std, type == "Curve")
   ) +
-  geom_point(aes(x = age, y = value, color = Biomarker), data = subset(spline_std, type == "Mark"), shape = "I", size = 4) +
-  scale_color_manual(values = colors0) +
-  scale_fill_manual(values = colors0) +
+  geom_line(aes(x = age, y = value, group = Biomarker, color = Biomarker), 
+            data = subset(spline_std, type == "Curve")) +
+  geom_point(aes(x = age, y = value, color = Biomarker), 
+             data = subset(spline_std, type == "Mark"), 
+             shape = "I", size = 4) +
+  scale_color_manual(values = colors0, labels = print_labels, 
+                     breaks = bionames) +
+  scale_fill_manual(values = colors0, labels = print_labels, 
+                    breaks = bionames) +
   scale_x_continuous(limits = c(50, 100)) +
   scale_y_continuous(limits = c(0, 1)) +
   ylab("Abnormality") +
   theme(
     legend.justification = c(0, 0.5),
-    axis.text.y = element_text()
+    axis.text.y = element_text(size = 20),
+    axis.text.x = element_text(size = 20),
+    axis.title.x = element_text(size = 20),
+    axis.title.y = element_text(size = 20),
+    legend.text = element_text(size = 20),
+    title = element_text(size = 20)
   )
 
-load("AD_Diagnose_Age.rda")
-load("DECAGE.rda")
 p2 <-
   rbind(cbind(age = AD_Diagnose_Age, status = "Dementia"), cbind(age = decs, status = "Onset")) %>%
   as.data.frame() %>%
@@ -211,6 +235,11 @@ p2 <-
   theme(
     axis.ticks.y = element_blank(),
     axis.text.y = element_blank(),
+    axis.text.x = element_text(size = 20),
+    axis.title.x = element_text(size = 20),
+    axis.title.y = element_text(size = 20),
+    legend.text = element_text(size = 20),
+    title = element_text(size = 20),
     legend.justification = c(0, 0.5)
   )
 pdf("SplineStd.pdf", width = 14)
