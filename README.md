@@ -37,7 +37,8 @@ The scripts uses multiple existing packages in R, including **tidyverse, splines
 
 ```         
 install.packages(c(
-'latex2exp'
+'latex2exp',
+'ggnewscale',
 'tidyverse',
 'splines2',
 'TruncatedNormal',
