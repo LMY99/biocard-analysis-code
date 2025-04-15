@@ -1,6 +1,6 @@
 # MIT License
 
-Copyright (c) 2025 Mingyuan Li,Zheyu Wang,Akihiko Nishimura
+Copyright (c) 2025 Mingyuan Li, Zheyu Wang, Akihiko Nishimura
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
