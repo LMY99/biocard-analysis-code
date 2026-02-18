@@ -197,7 +197,7 @@ stopImplicitCluster()
 coef_mean <- apply(coefs[,,-(1:Burnin)],c(1,2),mean)
 X_test <- as.matrix(cbind(intercept = 1, df_test[, c("apoe", "SEX", "education")]))
 B_test <- ibs(pmin(pmax(df_test$ageori, min(boundary.knot)), max(boundary.knot)),
-                   knots = knot.list[[i]], Boundary.knots = boundary.knot,
+                   knots = knot.list[[1]], Boundary.knots = boundary.knot,
                    degree = 2, intercept = TRUE
 )[,3:22]
 X_test <- cbind(X_test, B_test)
