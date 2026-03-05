@@ -63,6 +63,10 @@ logit_fit <- matrix(ncol=ncol(FE_fit),nrow=nrow(FE_fit))
 for(i in 1:ncol(FE_fit))
   logit_fit[,i] <- plogis((df_test$ageori - pos_fit[i])/scale_fit[i])*amp_fit[i]
 Y_test_fit <- FE_fit + logit_fit
-cv_error <- mean(colMeans((df_test[,1:11] - Y_test_fit)^2, na.rm = TRUE))
-
-save(cv_error, file = paste('para_cv',cv_exclude,'.rda',sep=''))
+Y_test <- df_test[,1:11]
+cv_error <- mean(colMeans((Y_test - Y_test_fit)^2, na.rm = TRUE))
+var_noise <- mean(stan.array$sigmaerror)
+var_between <- mean(stan.array$sigmarandom)
+save(cv_error, var_noise, var_between, 
+     Y_test, Y_test_fit,
+     file = paste('para_cv',cv_exclude,'.rda',sep=''))

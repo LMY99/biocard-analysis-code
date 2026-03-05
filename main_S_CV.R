@@ -202,5 +202,10 @@ B_test <- ibs(pmin(pmax(df_test$ageori, min(boundary.knot)), max(boundary.knot))
 )[,3:22]
 X_test <- cbind(X_test, B_test)
 Y_test <- df_test[,1:11]
-cv_error <- mean(colMeans((Y_test - X_test %*% coef_mean)^2, na.rm = TRUE))
-save(cv_error, file = paste('S_cv',cv_exclude,'.rda',sep=''))
+Y_test_fit <- X_test %*% coef_mean
+cv_error <- mean(colMeans((Y_test - Y_test_fit)^2, na.rm = TRUE))
+var_noise <- mean(sigmays[(Burnin+1):R])
+var_between <- mean(sigmaws[(Burnin+1):R])
+save(cv_error, var_noise, var_between, 
+     Y_test, Y_test_fit,
+     file = paste('S_cv',cv_exclude,'.rda',sep=''))
