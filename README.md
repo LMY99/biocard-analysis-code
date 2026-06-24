@@ -72,3 +72,20 @@ After running these scripts, there should be one text file and two PDF files. *t
 
 There should also be a workspace file *biocard_result_group20nonzeros.RData* after running the scripts. It contains all the MCMC samples for reference.
 
+There are also three files named `main_XXX_CV.R` where `XXX` is one of `flex`, `para` or `S`, 
+and another named `make_split_index.R`.
+These files are for conducting 5-fold cross-validation analysis in the same section, 
+and can be executed by using the command like the following:
+
+```
+Rscript make_split_index.R
+Rscript main_S_CV.R 1
+```
+
+where the R script name `main_S_CV.R` can be changed to `main_flex_CV.R` or `main_para_CV.R`, 
+corresponding to the S-shape, flexible and parametric model. 
+The number `1` can be changed to any integer from 1 to 5, representing the fold that are used as validation set.
+The first line of command should yield a file named `cv_split.rda` containing the indices of the 5-fold split. 
+The number of individuals (253 in the original version) can be changed to match the data size.
+The second line of command should yield a file named `S_cv1.rda`, or `XXX_cv(d).rda` if you run `Rscript main_XXX_CV.R d`.
+The five rda files of the same model can then be aggregated to yield the cross-validated error.
