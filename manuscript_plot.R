@@ -191,6 +191,7 @@ spline_std <- mutate(spline_std, Biomarker = factor(Biomarker, levels = bionames
 # )
 p1 <-
   ggplot() +
+  geom_abline(slope = 0, intercept = 0.25, color = 'black', linetype = 'dashed') +
   geom_ribbon(aes(x = age, ymin = lower, ymax = upper, group = Biomarker, fill = Biomarker),
               alpha = 0.1,
               data = subset(spline_std, type == "Curve"&Biomarker%in%bionames[1:3])
@@ -243,7 +244,8 @@ p1 <-
   
   
   scale_x_continuous(limits = c(50, 100)) +
-  scale_y_continuous(limits = c(0, 1)) +
+  scale_y_continuous(limits = c(0, 1), 
+                     labels = function(x) paste(as.integer(100*x),'%',sep='')) +
   ylab("Abnormality") +
   theme(
     legend.justification = c(0, 0.5),
